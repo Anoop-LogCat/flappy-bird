@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
+enum BirdEnum { up, down, rest }
+
 class Bird extends StatelessWidget {
-  final String direction;
+  final BirdEnum direction;
   const Bird({Key? key, required this.direction}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Transform.rotate(
-      angle: direction == "UP"
+      angle: direction == BirdEnum.up
           ? 45.0
-          : direction == "DOWN"
+          : direction == BirdEnum.down
               ? -45.0
               : 0,
       child: Image.asset(

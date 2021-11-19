@@ -13,7 +13,8 @@ class Rock extends StatelessWidget {
   final double dx;
   final double dy;
   final double width;
-  Rock({Key? key, required this.dx, required this.dy, required this.width})
+  const Rock(
+      {Key? key, required this.dx, required this.dy, required this.width})
       : super(key: key);
 
   @override

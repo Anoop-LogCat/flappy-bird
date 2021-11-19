@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flappybird/components/barrier.dart';
 import 'package:flappybird/components/bird.dart';
 import 'package:flappybird/components/rock.dart';
 import 'package:flutter/material.dart';
@@ -20,25 +21,11 @@ class _HomeState extends State<Home> {
   double birdYAxis = 0;
   double jumpTime = 0;
   double jumpHeight = 0;
-  double jumpSpeed = 3;
+  double jumpSpeed = 2;
   double initialHeight = 0;
 
   List<RockModel> rocks = [];
-
-  @override
-  void initState() {
-    super.initState();
-    rocks.add(RockModel(doubleInRange(-1.0, 1.0), doubleInRange(-1.0, 1.0),
-        doubleInRange(40, 80)));
-    rocks.add(RockModel(doubleInRange(-1.0, 1.0), doubleInRange(-1.0, 1.0),
-        doubleInRange(40, 80)));
-    rocks.add(RockModel(doubleInRange(-1.0, 1.0), doubleInRange(-1.0, 1.0),
-        doubleInRange(40, 80)));
-    rocks.add(RockModel(doubleInRange(-1.0, 1.0), doubleInRange(-1.0, 1.0),
-        doubleInRange(40, 80)));
-    rocks.add(RockModel(doubleInRange(-1.0, 1.0), doubleInRange(-1.0, 1.0),
-        doubleInRange(40, 80)));
-  }
+  List<BarrierModel> barriers = [];
 
   void resetValues() {
     isStarted = false;
@@ -52,6 +39,19 @@ class _HomeState extends State<Home> {
     isStarted = true;
     jumpTime = 0;
     initialHeight = birdYAxis;
+
+    rocks.clear();
+    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+
+    barriers.clear();
+    barriers.add(BarrierModel(BarrierEnum.top, 1.9, 150));
+    barriers.add(BarrierModel(BarrierEnum.bottom, 1.9, 150));
+    barriers.add(BarrierModel(BarrierEnum.top, 3.5, 150));
+    barriers.add(BarrierModel(BarrierEnum.bottom, 3.5, 150));
   }
 
   void jump() {
@@ -67,7 +67,16 @@ class _HomeState extends State<Home> {
       for (var rock in rocks) {
         rock.dx -= 0.04;
         if (rock.dx < -1.5) {
-          rock.dx = 1.5 + doubleInRange(0, 1.0);
+          rock.dx = 1.5 + rand(0, 1.0);
+          rock.dy = rand(-1.0, 1.0);
+          rock.width = rand(40, 80);
+        }
+      }
+      for (var barrier in barriers) {
+        barrier.dx -= 0.04;
+        if (barrier.dx < -1.9) {
+          barrier.dx = 1.9;
+          barrier.height = rand(100, 300);
         }
       }
       jumpTime += 0.04;
@@ -78,22 +87,22 @@ class _HomeState extends State<Home> {
         jumpHeight = (-4.9 * pow(jumpTime, 2)) + (jumpSpeed * jumpTime);
         birdYAxis = initialHeight - jumpHeight;
       });
-      if (birdYAxis >= 1.0 || birdYAxis <= -1.0) {
+      if (birdYAxis >= 1.2 || birdYAxis <= -1.0) {
         resetValues();
         timer.cancel();
       }
     });
   }
 
-  String direction(double val) {
+  BirdEnum direction(double val) {
     return val < 0
-        ? "UP"
+        ? BirdEnum.up
         : val > 0
-            ? "DOWN"
-            : "REST";
+            ? BirdEnum.down
+            : BirdEnum.rest;
   }
 
-  double doubleInRange(num start, num end) =>
+  double rand(num start, num end) =>
       Random().nextDouble() * (end - start) + start;
 
   @override
@@ -110,14 +119,22 @@ class _HomeState extends State<Home> {
   Widget playScreen() {
     return Expanded(
         flex: 5,
-        child: Container(
-          alignment: Alignment(0, birdYAxis),
-          color: Colors.blue,
-          child: Bird(direction: direction(jumpHeight)),
+        child: Stack(
+          children: [
+            Container(
+              alignment: Alignment(0, birdYAxis),
+              color: Colors.blue,
+              child: Bird(direction: direction(jumpHeight)),
+            ),
+            for (var e in barriers)
+              Barrier(
+                position: e.position,
+                dx: e.dx,
+                height: e.height,
+              )
+          ],
         ));
   }
-
-  double rockXStart = 1.0, rockXEnd = -1.0;
 
   Widget scoreScreen(int score, int highScore) {
     const textStyle = TextStyle(
@@ -125,12 +142,7 @@ class _HomeState extends State<Home> {
     return Expanded(
         flex: 2,
         child: Container(
-          decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-            Colors.brown[400]!,
-            Colors.brown[700]!,
-            Colors.brown[900]!
-          ], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
+          color: Colors.brown[800],
           child: Stack(
             children: [
               Column(
