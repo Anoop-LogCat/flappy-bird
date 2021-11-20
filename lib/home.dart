@@ -36,6 +36,7 @@ class _HomeState extends State<Home> {
   ];
 
   resetValues() => setState(() {
+        Navigator.pop(context);
         isStarted = false;
         birdYAxis = 0;
         highScore = highScore < score ? score : highScore;
