@@ -15,51 +15,65 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   bool isStarted = false;
+
   double score = 0;
-  int diffculty = 1;
   double highScore = 0;
+
   double birdYAxis = 0;
   double jumpTime = 0;
   double jumpHeight = 0;
   double jumpSpeed = 2;
   double initialHeight = 0;
+  double birdWidth = 0.1;
+  double birdHeight = 0.1;
 
   List<RockModel> rocks = [];
-  List<BarrierModel> barriers = [];
+  static List<double> barrierX = [2, 2 + 1.5];
+  static double barrierWidth = 0.5;
+  List<List<double>> barrierHeight = [
+    [0.6, 0.4],
+    [0.4, 0.6],
+  ];
 
-  void resetValues() {
-    isStarted = false;
-    birdYAxis = 0;
-    highScore = score;
-    score = 0;
-    jumpHeight = 0;
-  }
+  resetValues() => setState(() {
+        isStarted = false;
+        birdYAxis = 0;
+        highScore = highScore < score ? score : highScore;
+        score = 0;
+        jumpHeight = 0;
+      });
 
-  void setValues() {
-    isStarted = true;
-    jumpTime = 0;
-    initialHeight = birdYAxis;
+  setValues() => setState(() {
+        isStarted = true;
+        jumpTime = 0;
+        initialHeight = birdYAxis;
+        rocks.clear();
+        rocks.add(
+            RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+        rocks.add(
+            RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+        rocks.add(
+            RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+        rocks.add(
+            RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+        rocks.add(
+            RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
+        barrierX.clear();
+        barrierHeight.clear();
+        double x = rand(1.8, 3.0);
+        barrierX = [x, x + 1.5];
+        barrierHeight = [
+          [rand(0.3, 0.8), rand(0.3, 0.8)],
+          [rand(0.3, 0.8), rand(0.3, 0.8)],
+        ];
+      });
 
-    rocks.clear();
-    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
-    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
-    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
-    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
-    rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
-
-    barriers.clear();
-    barriers.add(BarrierModel(BarrierEnum.top, 1.9, 0.5));
-    barriers.add(BarrierModel(BarrierEnum.bottom, 1.9, 0.5));
-    barriers.add(BarrierModel(BarrierEnum.top, 3.5, 0.5));
-    barriers.add(BarrierModel(BarrierEnum.bottom, 3.5, 0.5));
-  }
-
-  void jump() => setState(() {
+  jump() => setState(() {
         jumpTime = 0;
         initialHeight = birdYAxis;
       });
 
-  void rockMovement() {
+  rockMovement() {
     for (var rock in rocks) {
       rock.dx -= 0.04;
       if (rock.dx < -1.5) {
@@ -70,14 +84,31 @@ class _HomeState extends State<Home> {
     }
   }
 
-  void barrierMovement() {
-    for (var barrier in barriers) {
-      barrier.dx -= 0.04;
-      if (barrier.dx < -1.9) {
-        barrier.dx = 1.9;
-        barrier.dy = rand(-1.0, 1.0);
+  barrierMovement() {
+    for (int i = 0; i < barrierX.length; i++) {
+      setState(() {
+        barrierX[i] -= 0.04;
+      });
+      if (barrierX[i] < -1.8) {
+        barrierX[i] = 1.5 + rand(0, 2);
+        barrierHeight[i] = [rand(0.3, 0.8), rand(0.3, 0.8)];
       }
     }
+  }
+
+  bool birdIsDead() {
+    if (birdYAxis < -1 || birdYAxis > 1) {
+      return true;
+    }
+    for (int i = 0; i < barrierX.length; i++) {
+      if (barrierX[i] <= birdWidth &&
+          barrierX[i] + barrierWidth >= -birdWidth &&
+          (birdYAxis <= -1 + barrierHeight[i][0] ||
+              birdYAxis + birdHeight >= 1 - barrierHeight[i][1])) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void start() {
@@ -93,9 +124,9 @@ class _HomeState extends State<Home> {
         jumpHeight = (-4.9 * pow(jumpTime, 2)) + (jumpSpeed * jumpTime);
         birdYAxis = initialHeight - jumpHeight;
       });
-      if (birdYAxis > 1.0 || birdYAxis < -1.0) {
-        resetValues();
+      if (birdIsDead()) {
         timer.cancel();
+        _showDialog();
       }
     });
   }
@@ -120,61 +151,124 @@ class _HomeState extends State<Home> {
     );
   }
 
+  _showDialog() {
+    showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: Colors.brown,
+            title: const Center(
+              child: Text(
+                "G A M E  O V E R",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            actions: [
+              GestureDetector(
+                onTap: resetValues,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: Container(
+                    padding: const EdgeInsets.all(7),
+                    color: Colors.white,
+                    child: const Text(
+                      'PLAY AGAIN',
+                      style: TextStyle(color: Colors.brown),
+                    ),
+                  ),
+                ),
+              )
+            ],
+          );
+        });
+  }
+
   Widget playScreen() {
     return Expanded(
-        flex: 5,
-        child: Stack(
-          children: [
-            Container(
-              alignment: Alignment(0, birdYAxis),
-              color: Colors.blue,
-              child: Bird(direction: direction(jumpHeight)),
-            ),
-            for (var e in barriers)
+      flex: 3,
+      child: Container(
+        color: Colors.blue,
+        child: Center(
+          child: Stack(
+            children: [
+              Bird(
+                direction: direction(jumpHeight),
+                birdYAxis: birdYAxis,
+                birdWidth: birdWidth,
+                birdHeight: birdHeight,
+              ),
               Barrier(
-                position: e.position,
-                dx: e.dx,
-                dy: e.dy,
+                barrierX: barrierX[0],
+                barrierWidth: barrierWidth,
+                barrierHeight: barrierHeight[0][0],
+                isThisBottomBarrier: false,
+              ),
+              Barrier(
+                barrierX: barrierX[0],
+                barrierWidth: barrierWidth,
+                barrierHeight: barrierHeight[0][1],
+                isThisBottomBarrier: true,
+              ),
+              Barrier(
+                barrierX: barrierX[1],
+                barrierWidth: barrierWidth,
+                barrierHeight: barrierHeight[1][0],
+                isThisBottomBarrier: false,
+              ),
+              Barrier(
+                barrierX: barrierX[1],
+                barrierWidth: barrierWidth,
+                barrierHeight: barrierHeight[1][1],
+                isThisBottomBarrier: true,
+              ),
+              Container(
+                alignment: const Alignment(0, -0.5),
+                child: Text(
+                  isStarted ? '' : 'T A P  T O  P L A Y',
+                  style: const TextStyle(color: Colors.white, fontSize: 25),
+                ),
               )
-          ],
-        ));
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget scoreScreen(int score, int highScore) {
-    const textStyle = TextStyle(
-        color: Colors.white, fontWeight: FontWeight.w900, fontSize: 25);
+    const textStyle = TextStyle(color: Colors.white, fontSize: 20);
     return Expanded(
-        flex: 2,
         child: Container(
-          color: Colors.brown[800],
-          child: Stack(
-            children: [
-              Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: rocks
-                      .map((e) => Rock(
-                            dx: e.dx,
-                            dy: e.dy,
-                            width: e.width,
-                          ))
-                      .toList()),
-              Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Score\n$score",
-                      textAlign: TextAlign.center,
-                      style: textStyle,
-                    ),
-                    Text("High Score\n$highScore",
-                        textAlign: TextAlign.center, style: textStyle)
-                  ],
+      color: Colors.brown[800],
+      child: Stack(
+        children: [
+          Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: rocks
+                  .map((e) => Rock(
+                        dx: e.dx,
+                        dy: e.dy,
+                        width: e.width,
+                      ))
+                  .toList()),
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  "S C O R E\n$score",
+                  textAlign: TextAlign.center,
+                  style: textStyle,
                 ),
-              ),
-            ],
+                Text("H I G H  S C O R E\n$highScore",
+                    textAlign: TextAlign.center, style: textStyle)
+              ],
+            ),
           ),
-        ));
+        ],
+      ),
+    ));
   }
 }
