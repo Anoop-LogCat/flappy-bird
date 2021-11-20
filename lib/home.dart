@@ -48,37 +48,43 @@ class _HomeState extends State<Home> {
     rocks.add(RockModel(1.5 + rand(-1.0, 1.0), rand(-1.0, 1.0), rand(40, 80)));
 
     barriers.clear();
-    barriers.add(BarrierModel(BarrierEnum.top, 1.9, 150));
-    barriers.add(BarrierModel(BarrierEnum.bottom, 1.9, 150));
-    barriers.add(BarrierModel(BarrierEnum.top, 3.5, 150));
-    barriers.add(BarrierModel(BarrierEnum.bottom, 3.5, 150));
+    barriers.add(BarrierModel(BarrierEnum.top, 1.9, 0.5));
+    barriers.add(BarrierModel(BarrierEnum.bottom, 1.9, 0.5));
+    barriers.add(BarrierModel(BarrierEnum.top, 3.5, 0.5));
+    barriers.add(BarrierModel(BarrierEnum.bottom, 3.5, 0.5));
   }
 
-  void jump() {
-    setState(() {
-      jumpTime = 0;
-      initialHeight = birdYAxis;
-    });
+  void jump() => setState(() {
+        jumpTime = 0;
+        initialHeight = birdYAxis;
+      });
+
+  void rockMovement() {
+    for (var rock in rocks) {
+      rock.dx -= 0.04;
+      if (rock.dx < -1.5) {
+        rock.dx = 1.5 + rand(0, 1.0);
+        rock.dy = rand(-1.0, 1.0);
+        rock.width = rand(40, 80);
+      }
+    }
+  }
+
+  void barrierMovement() {
+    for (var barrier in barriers) {
+      barrier.dx -= 0.04;
+      if (barrier.dx < -1.9) {
+        barrier.dx = 1.9;
+        barrier.dy = rand(-1.0, 1.0);
+      }
+    }
   }
 
   void start() {
     setValues();
     Timer.periodic(const Duration(milliseconds: 60), (timer) {
-      for (var rock in rocks) {
-        rock.dx -= 0.04;
-        if (rock.dx < -1.5) {
-          rock.dx = 1.5 + rand(0, 1.0);
-          rock.dy = rand(-1.0, 1.0);
-          rock.width = rand(40, 80);
-        }
-      }
-      for (var barrier in barriers) {
-        barrier.dx -= 0.04;
-        if (barrier.dx < -1.9) {
-          barrier.dx = 1.9;
-          barrier.height = rand(100, 300);
-        }
-      }
+      rockMovement();
+      barrierMovement();
       jumpTime += 0.04;
       if (timer.tick % 5 == 0) {
         score = timer.tick / 5;
@@ -87,20 +93,18 @@ class _HomeState extends State<Home> {
         jumpHeight = (-4.9 * pow(jumpTime, 2)) + (jumpSpeed * jumpTime);
         birdYAxis = initialHeight - jumpHeight;
       });
-      if (birdYAxis >= 1.2 || birdYAxis <= -1.0) {
+      if (birdYAxis > 1.0 || birdYAxis < -1.0) {
         resetValues();
         timer.cancel();
       }
     });
   }
 
-  BirdEnum direction(double val) {
-    return val < 0
-        ? BirdEnum.up
-        : val > 0
-            ? BirdEnum.down
-            : BirdEnum.rest;
-  }
+  BirdEnum direction(double val) => val < 0
+      ? BirdEnum.up
+      : val > 0
+          ? BirdEnum.down
+          : BirdEnum.rest;
 
   double rand(num start, num end) =>
       Random().nextDouble() * (end - start) + start;
@@ -130,7 +134,7 @@ class _HomeState extends State<Home> {
               Barrier(
                 position: e.position,
                 dx: e.dx,
-                height: e.height,
+                dy: e.dy,
               )
           ],
         ));
